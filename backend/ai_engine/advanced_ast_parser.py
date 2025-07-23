@@ -316,6 +316,27 @@ class AdvancedASTParser:
         result['types'] = self._extract_typescript_types(content)
         return result
     
+    def _extract_typescript_types(self, content: str) -> List[str]:
+        """Extract TypeScript type definitions"""
+        types = []
+        type_patterns = [
+            r'interface\s+(\w+)',
+            r'type\s+(\w+)\s*=',
+            r'enum\s+(\w+)',
+            r'class\s+(\w+)',
+            r'function\s+\w+\([^)]*\)\s*:\s*(\w+)',
+            r'(\w+)\s*:\s*(\w+\[\]|\w+)'
+        ]
+        
+        for pattern in type_patterns:
+            matches = re.findall(pattern, content)
+            if isinstance(matches[0] if matches else None, tuple):
+                types.extend([match[0] for match in matches])
+            else:
+                types.extend(matches)
+        
+        return list(set(types))
+    
     def _parse_java(self, content: str, file_path: str) -> Dict[str, Any]:
         """Parse Java code"""
         try:
