@@ -5,7 +5,7 @@ pymongo==4.6.0
 together
 groq
 openai
-pinecone-client
+pinecone
 sentence-transformers
 langchain
 langchain-community
