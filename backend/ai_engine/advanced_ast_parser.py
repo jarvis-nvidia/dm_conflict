@@ -200,6 +200,31 @@ class AdvancedASTParser:
                     imports.append(f"{module}.{alias.name}" if module else alias.name)
         return imports
     
+    def _extract_python_globals(self, tree: ast.AST) -> List[str]:
+        """Extract global variables from Python AST"""
+        globals_vars = []
+        
+        # Walk through all nodes in the AST
+        for node in ast.walk(tree):
+            # Check for global variable assignments at module level
+            if isinstance(node, ast.Assign):
+                # Check if this assignment is at module level (not inside function/class)
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        globals_vars.append(target.id)
+            
+            # Check for explicit global declarations
+            elif isinstance(node, ast.Global):
+                for name in node.names:
+                    globals_vars.append(name)
+            
+            # Check for module-level variable declarations
+            elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+                globals_vars.append(node.target.id)
+        
+        # Remove duplicates and return
+        return list(set(globals_vars))
+    
     def _parse_javascript(self, content: str, file_path: str) -> Dict[str, Any]:
         """Parse JavaScript/TypeScript code"""
         try:
