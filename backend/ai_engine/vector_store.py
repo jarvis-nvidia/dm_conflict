@@ -6,7 +6,6 @@ Manages vector storage and retrieval using Pinecone
 import asyncio
 import json
 from typing import List, Dict, Optional, Tuple, Any
-import pinecone
 from pinecone import Pinecone, ServerlessSpec
 import uuid
 import time
