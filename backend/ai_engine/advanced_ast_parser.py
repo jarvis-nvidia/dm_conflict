@@ -174,6 +174,19 @@ class AdvancedASTParser:
         
         return complexity
     
+    def _extract_return_type(self, node: ast.AST) -> Optional[str]:
+        """Extract return type annotation from function node"""
+        if hasattr(node, 'returns') and node.returns:
+            if isinstance(node.returns, ast.Name):
+                return node.returns.id
+            elif isinstance(node.returns, ast.Constant):
+                return str(node.returns.value)
+            elif hasattr(node.returns, 'id'):
+                return node.returns.id
+            else:
+                return str(node.returns)
+        return None
+    
     def _parse_javascript(self, content: str, file_path: str) -> Dict[str, Any]:
         """Parse JavaScript/TypeScript code"""
         try:
