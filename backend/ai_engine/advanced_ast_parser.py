@@ -58,11 +58,7 @@ class AdvancedASTParser:
             'python': self._parse_python,
             'javascript': self._parse_javascript,
             'typescript': self._parse_typescript,
-            'java': self._parse_java,
-            'go': self._parse_go,
-            'rust': self._parse_rust,
-            'cpp': self._parse_cpp,
-            'csharp': self._parse_csharp
+            'java': self._parse_java
         }
         
         # Language-specific complexity rules
