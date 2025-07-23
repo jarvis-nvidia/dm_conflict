@@ -22,3 +22,11 @@ pydantic
 httpx
 async-timeout
 google-generativeai
+esprima
+javalang
+pylint
+radon
+bandit
+safety
+autopep8
+black
