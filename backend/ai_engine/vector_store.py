@@ -56,7 +56,7 @@ class VectorStore:
                 metric="cosine",
                 spec=ServerlessSpec(
                     cloud="aws",
-                    region=config.pinecone_environment.split('-')[0] + '-' + config.pinecone_environment.split('-')[1]
+                    region="us-east-1"
                 )
             )
             
