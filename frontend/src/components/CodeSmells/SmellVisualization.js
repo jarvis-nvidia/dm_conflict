@@ -1,199 +1,68 @@
 import React from 'react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line
-} from 'recharts';
 
 const SmellVisualization = ({ smells = [] }) => {
-  if (!smells || smells.length === 0) {
+  // Process smell data for visualization
+  const smellCategories = smells.reduce((acc, smell) => {
+    const category = smell.category || smell.smell_type || 'Unknown';
+    acc[category] = (acc[category] || 0) + 1;
+    return acc;
+  }, {});
+
+  const categories = Object.keys(smellCategories);
+  const maxCount = Math.max(...Object.values(smellCategories), 1);
+
+  // If no smells, show empty state
+  if (smells.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Code Smell Analysis
-        </h3>
-        <div className="text-center py-8">
-          <p className="text-gray-600 dark:text-gray-400">
-            No data available for visualization
-          </p>
+      <div className="flex flex-wrap gap-4 px-4 py-6">
+        <div className="flex min-w-72 flex-1 flex-col gap-2 rounded-lg border border-[#3b4754] p-6">
+          <p className="text-white text-base font-medium leading-normal">Code Smell Distribution</p>
+          <div className="flex items-center justify-center min-h-[180px]">
+            <p className="text-[#9cabba] text-sm">No code smells detected yet</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Process data for visualizations
-  const severityData = smells.reduce((acc, smell) => {
-    const severity = smell.severity || 'unknown';
-    acc[severity] = (acc[severity] || 0) + 1;
-    return acc;
-  }, {});
-
-  const categoryData = smells.reduce((acc, smell) => {
-    const category = smell.category || 'other';
-    acc[category] = (acc[category] || 0) + 1;
-    return acc;
-  }, {});
-
-  const severityChartData = Object.entries(severityData).map(([severity, count]) => ({
-    name: severity,
-    count,
-    fill: getSeverityColor(severity)
-  }));
-
-  const categoryChartData = Object.entries(categoryData).map(([category, count]) => ({
-    name: category,
-    value: count,
-    fill: getCategoryColor(category)
-  }));
-
-  // Confidence distribution
-  const confidenceData = smells.reduce((acc, smell) => {
-    const confidence = Math.round((smell.confidence || 0) * 100);
-    const range = Math.floor(confidence / 10) * 10;
-    const rangeKey = `${range}-${range + 9}%`;
-    acc[rangeKey] = (acc[rangeKey] || 0) + 1;
-    return acc;
-  }, {});
-
-  const confidenceChartData = Object.entries(confidenceData).map(([range, count]) => ({
-    name: range,
-    count
-  }));
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Severity Distribution */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Issues by Severity
-        </h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={severityChartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis 
-              dataKey="name" 
-              tick={{ fill: '#6B7280', fontSize: 12 }}
-              axisLine={{ stroke: '#6B7280' }}
-            />
-            <YAxis 
-              tick={{ fill: '#6B7280', fontSize: 12 }}
-              axisLine={{ stroke: '#6B7280' }}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: '#1F2937', 
-                border: '1px solid #374151',
-                borderRadius: '6px',
-                color: '#F3F4F6'
-              }}
-            />
-            <Bar dataKey="count" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Category Distribution */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Issues by Category
-        </h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <PieChart>
-            <Pie
-              data={categoryChartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={40}
-              outerRadius={80}
-              paddingAngle={5}
-              dataKey="value"
-            >
-              {categoryChartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-              ))}
-            </Pie>
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: '#1F2937', 
-                border: '1px solid #374151',
-                borderRadius: '6px',
-                color: '#F3F4F6'
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Confidence Distribution */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Confidence Distribution
-        </h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={confidenceChartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis 
-              dataKey="name" 
-              tick={{ fill: '#6B7280', fontSize: 12 }}
-              axisLine={{ stroke: '#6B7280' }}
-            />
-            <YAxis 
-              tick={{ fill: '#6B7280', fontSize: 12 }}
-              axisLine={{ stroke: '#6B7280' }}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: '#1F2937', 
-                border: '1px solid #374151',
-                borderRadius: '6px',
-                color: '#F3F4F6'
-              }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="count" 
-              stroke="#3B82F6" 
-              strokeWidth={2}
-              dot={{ fill: '#3B82F6' }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+    <div className="flex flex-wrap gap-4 px-4 py-6">
+      <div className="flex min-w-72 flex-1 flex-col gap-2 rounded-lg border border-[#3b4754] p-6">
+        <p className="text-white text-base font-medium leading-normal">Code Smell Distribution</p>
+        <div className="grid min-h-[180px] grid-flow-col gap-6 grid-rows-[1fr_auto] items-end justify-items-center px-3">
+          {categories.slice(0, 4).map((category) => {
+            const count = smellCategories[category];
+            const height = (count / maxCount) * 100;
+            
+            return (
+              <React.Fragment key={category}>
+                <div 
+                  className="border-[#9cabba] bg-[#283039] border-t-2 w-full transition-all duration-300 hover:bg-[#3b4754]" 
+                  style={{ height: `${height}%` }}
+                  title={`${category}: ${count} issues`}
+                />
+                <p className="text-[#9cabba] text-[13px] font-bold leading-normal tracking-[0.015em] text-center">
+                  {category.length > 12 ? category.substring(0, 10) + '...' : category}
+                </p>
+              </React.Fragment>
+            );
+          })}
+          
+          {/* Fill empty slots if less than 4 categories */}
+          {categories.length < 4 && Array.from({ length: 4 - categories.length }).map((_, index) => (
+            <React.Fragment key={`empty-${index}`}>
+              <div className="border-[#9cabba] bg-[#283039] border-t-2 w-full opacity-30" style={{ height: '10%' }} />
+              <p className="text-[#9cabba] text-[13px] font-bold leading-normal tracking-[0.015em] opacity-30">-</p>
+            </React.Fragment>
+          ))}
+        </div>
+        
+        <div className="mt-4 text-xs text-[#9cabba] text-center">
+          Total issues: {smells.length}
+        </div>
       </div>
     </div>
   );
-};
-
-// Helper functions
-const getSeverityColor = (severity) => {
-  const colors = {
-    critical: '#DC2626',
-    high: '#EA580C',
-    medium: '#D97706',
-    low: '#059669',
-    unknown: '#6B7280'
-  };
-  return colors[severity] || colors.unknown;
-};
-
-const getCategoryColor = (category) => {
-  const colors = {
-    security: '#DC2626',
-    performance: '#059669',
-    maintainability: '#3B82F6',
-    complexity: '#D97706',
-    style: '#8B5CF6',
-    other: '#6B7280'
-  };
-  return colors[category] || colors.other;
 };
 
 export default SmellVisualization;
