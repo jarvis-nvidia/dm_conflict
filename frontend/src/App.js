@@ -1,53 +1,41 @@
-import { useEffect } from "react";
+import React, { useState } from "react";
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { ThemeProvider } from './contexts/ThemeContext';
+import Header from './components/Layout/Header';
+import Footer from './components/Layout/Footer';
+import CodeAnalyzer from './components/CodeAnalysis/CodeAnalyzer';
+import CodeSmellDashboard from './components/CodeSmells/CodeSmellDashboard';
+import LearningDashboard from './components/Learning/LearningDashboard';
+import GitHubImport from './components/GitHub/GitHubImport';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+function App() {
+  const [activeTab, setActiveTab] = useState('analysis');
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'analysis':
+        return <CodeAnalyzer />;
+      case 'smells':
+        return <CodeSmellDashboard />;
+      case 'learning':
+        return <LearningDashboard />;
+      case 'github':
+        return <GitHubImport />;
+      default:
+        return <CodeAnalyzer />;
     }
   };
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
-
-function App() {
-  return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <ThemeProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+        <Header activeTab={activeTab} onTabChange={setActiveTab} />
+        <main className="flex-1">
+          {renderContent()}
+        </main>
+        <Footer />
+      </div>
+    </ThemeProvider>
   );
 }
 
