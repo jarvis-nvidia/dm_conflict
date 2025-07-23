@@ -225,6 +225,25 @@ class AdvancedASTParser:
         # Remove duplicates and return
         return list(set(globals_vars))
     
+    def _calculate_js_complexity(self, node) -> int:
+        """Calculate complexity for JavaScript AST node"""
+        complexity = 1  # Base complexity
+        
+        # Add complexity for control flow structures
+        node_type = getattr(node, 'type', '')
+        if node_type in ['IfStatement', 'WhileStatement', 'ForStatement', 'DoWhileStatement']:
+            complexity += 1
+        elif node_type == 'SwitchStatement':
+            # Add complexity for each case
+            cases = getattr(node, 'cases', [])
+            complexity += len(cases)
+        elif node_type == 'TryStatement':
+            complexity += 1
+        elif node_type in ['ConditionalExpression', 'LogicalExpression']:
+            complexity += 1
+        
+        return complexity
+    
     def _parse_javascript(self, content: str, file_path: str) -> Dict[str, Any]:
         """Parse JavaScript/TypeScript code"""
         try:
