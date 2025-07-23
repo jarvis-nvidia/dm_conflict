@@ -173,32 +173,45 @@ class BackendTester:
         
         try:
             start_time = time.time()
+            # Try the health endpoint without /api prefix first
             response = requests.get(f"{self.base_url}/health", timeout=10)
             response_time = time.time() - start_time
             
+            # If that fails, try with /api prefix
+            if response.status_code != 200:
+                start_time = time.time()
+                response = requests.get(f"{self.base_url}/api/health", timeout=10)
+                response_time = time.time() - start_time
+            
             if response.status_code == 200:
-                data = response.json()
-                
-                # Validate response structure
-                required_fields = ["status", "version", "ai_engine", "agents", "database", "features"]
-                missing_fields = [field for field in required_fields if field not in data]
-                
-                if missing_fields:
+                try:
+                    data = response.json()
+                    
+                    # Validate response structure
+                    required_fields = ["status", "version", "ai_engine", "agents", "database", "features"]
+                    missing_fields = [field for field in required_fields if field not in data]
+                    
+                    if missing_fields:
+                        self.log_test("Health Check", False, response_time, {
+                            "error": f"Missing fields: {missing_fields}",
+                            "response": data
+                        })
+                    else:
+                        self.log_test("Health Check", True, response_time, {
+                            "status": data["status"],
+                            "version": data["version"],
+                            "features_count": len(data["features"]),
+                            "agents_status": data["agents"]
+                        })
+                except json.JSONDecodeError as e:
                     self.log_test("Health Check", False, response_time, {
-                        "error": f"Missing fields: {missing_fields}",
-                        "response": data
-                    })
-                else:
-                    self.log_test("Health Check", True, response_time, {
-                        "status": data["status"],
-                        "version": data["version"],
-                        "features_count": len(data["features"]),
-                        "agents_status": data["agents"]
+                        "error": f"Invalid JSON response: {str(e)}",
+                        "response_text": response.text[:200]
                     })
             else:
                 self.log_test("Health Check", False, response_time, {
                     "error": f"HTTP {response.status_code}",
-                    "response": response.text
+                    "response": response.text[:200]
                 })
                 
         except Exception as e:
