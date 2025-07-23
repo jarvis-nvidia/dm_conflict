@@ -154,6 +154,26 @@ class AdvancedASTParser:
                 'error': str(e)
             }
     
+    def _calculate_node_complexity(self, node: ast.AST, language: str) -> int:
+        """Calculate complexity for a specific AST node"""
+        complexity = 1  # Base complexity
+        
+        if language == 'python':
+            # Add complexity for control flow statements
+            if isinstance(node, (ast.If, ast.While, ast.For, ast.AsyncFor)):
+                complexity += 1
+            elif isinstance(node, ast.Try):
+                complexity += len(getattr(node, 'handlers', []))
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                # Add complexity for nested conditions and loops
+                for child in ast.walk(node):
+                    if isinstance(child, (ast.If, ast.While, ast.For, ast.AsyncFor)):
+                        complexity += 1
+                    elif isinstance(child, (ast.And, ast.Or)):
+                        complexity += 1
+        
+        return complexity
+    
     def _parse_javascript(self, content: str, file_path: str) -> Dict[str, Any]:
         """Parse JavaScript/TypeScript code"""
         try:
