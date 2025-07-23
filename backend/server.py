@@ -1,12 +1,12 @@
 """
 DevMind Backend Server
-FastAPI server with AI-powered code analysis endpoints
+FastAPI server with advanced AI-powered code analysis endpoints
 """
 
 import os
 import asyncio
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
@@ -21,11 +21,16 @@ from ai_engine import (
 )
 from ai_engine.code_processor import code_processor
 from ai_engine.agent_framework import AgentTask, AgentMessage
+from ai_engine.advanced_ast_parser import advanced_ast_parser
+from ai_engine.code_smell_detector import code_smell_detector
+from ai_engine.dependency_analyzer import dependency_analyzer
+from ai_engine.learning_system import personalization_engine
+from ai_engine.database import devmind_db
 
 app = FastAPI(
     title="DevMind AI Engine",
-    description="AI-powered debugging and code review assistant",
-    version="1.0.0"
+    description="Advanced AI-powered debugging and code review assistant",
+    version="2.0.0"
 )
 
 # CORS configuration
@@ -37,49 +42,55 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Request/Response Models
-class CodeAnalysisRequest(BaseModel):
+# Enhanced Request/Response Models
+class AdvancedCodeAnalysisRequest(BaseModel):
     code: str
     language: str
     file_path: Optional[str] = None
-    analysis_type: str = "general"
+    analysis_type: str = "comprehensive"
+    user_id: Optional[str] = None
+    include_smells: bool = True
+    include_complexity: bool = True
+    include_dependencies: bool = True
 
-class DebugRequest(BaseModel):
+class CodeSmellAnalysisRequest(BaseModel):
     code: str
-    error_message: str
-    language: str
-    file_path: Optional[str] = None
-
-class ReviewRequest(BaseModel):
-    code: str
-    language: str
     file_path: str
-    review_type: str = "comprehensive"
+    language: str
+    user_id: Optional[str] = None
+    custom_rules: Optional[Dict[str, Any]] = None
 
-class CommitRequest(BaseModel):
-    changes: List[Dict[str, Any]]
-    commit_style: str = "conventional"
-
-class RepositoryRequest(BaseModel):
-    repo_path: str
+class ProjectAnalysisRequest(BaseModel):
+    project_path: str
+    user_id: Optional[str] = None
     exclude_patterns: Optional[List[str]] = None
+    analysis_depth: str = "full"  # full, medium, quick
 
-class QueryRequest(BaseModel):
-    query: str
-    context_type: str = "general"
-    max_results: int = 5
-    file_filter: Optional[str] = None
+class LearningRequest(BaseModel):
+    user_id: str
+    learning_type: str  # "code_style", "commit_pattern", "debug_session"
+    data: Dict[str, Any]
+
+class PersonalizationRequest(BaseModel):
+    user_id: str
+    context: Dict[str, Any]
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
     """Initialize AI Engine on startup"""
-    print("🚀 Starting DevMind AI Engine...")
+    print("🚀 Starting DevMind AI Engine v2.0...")
     
     # Start agent framework
     await agent_framework.start()
     
-    print("✅ DevMind AI Engine initialized successfully!")
+    # Initialize database
+    try:
+        devmind_db._create_indexes()
+    except Exception as e:
+        print(f"⚠️ Database initialization warning: {e}")
+    
+    print("✅ DevMind AI Engine v2.0 initialized successfully!")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -90,50 +101,406 @@ async def shutdown_event():
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Enhanced health check endpoint"""
     return {
         "status": "healthy",
+        "version": "2.0.0",
         "ai_engine": "operational",
-        "agents": agent_framework.get_agent_status()
+        "agents": agent_framework.get_agent_status(),
+        "database": "connected",
+        "features": [
+            "advanced_ast_parsing",
+            "code_smell_detection", 
+            "dependency_analysis",
+            "personalized_learning",
+            "multi_language_support"
+        ]
     }
 
-# AI Engine Endpoints
-@app.post("/api/analyze-code")
-async def analyze_code(request: CodeAnalysisRequest):
-    """Analyze code using AI agents"""
+# ===== PHASE 2: ADVANCED ANALYSIS ENDPOINTS =====
+
+@app.post("/api/v2/analyze-code-advanced")
+async def analyze_code_advanced(request: AdvancedCodeAnalysisRequest):
+    """Advanced code analysis with AST parsing, complexity metrics, and smells"""
     try:
-        task = AgentTask(
-            task_type="analyze",
-            input_data={
-                "code": request.code,
-                "language": request.language,
+        results = {
+            "success": True,
+            "file_path": request.file_path,
+            "language": request.language,
+            "analysis_timestamp": asyncio.get_event_loop().time()
+        }
+        
+        # 1. Advanced AST Analysis
+        if request.include_dependencies or request.analysis_type == "comprehensive":
+            ast_analysis = advanced_ast_parser.parse_file(
+                request.file_path or "temp_file.py", 
+                request.code
+            )
+            results["ast_analysis"] = ast_analysis
+        
+        # 2. Code Smell Detection
+        if request.include_smells:
+            smells = code_smell_detector.detect_smells(
+                request.code, 
+                request.file_path or "temp_file",
+                request.language,
+                request.custom_rules if hasattr(request, 'custom_rules') else None
+            )
+            
+            results["code_smells"] = [
+                {
+                    "type": smell.smell_type,
+                    "severity": smell.severity,
+                    "description": smell.description,
+                    "line": smell.line_number,
+                    "suggestion": smell.suggestion,
+                    "rule_id": smell.rule_id,
+                    "category": smell.category
+                }
+                for smell in smells
+            ]
+            
+            results["smell_summary"] = code_smell_detector.get_smell_summary(smells)
+            
+            # Save smells to database
+            if request.file_path and request.user_id:
+                devmind_db.save_code_smells(
+                    request.file_path, 
+                    [smell.__dict__ for smell in smells],
+                    request.user_id
+                )
+        
+        # 3. Save analysis to database
+        if request.user_id:
+            analysis_id = devmind_db.save_code_analysis({
                 "file_path": request.file_path,
-                "analysis_type": request.analysis_type
-            }
-        )
+                "language": request.language,
+                "analysis_type": request.analysis_type,
+                "metrics": results.get("ast_analysis", {}).get("metrics", {}),
+                "user_id": request.user_id
+            })
+            results["analysis_id"] = analysis_id
+            
+            # Learn from user's code for personalization
+            if request.code and request.language:
+                personalization_engine.learn_from_code_sample(
+                    request.user_id,
+                    request.code,
+                    request.file_path or "temp_file",
+                    request.language
+                )
         
-        task_id = await agent_framework.submit_task(task)
+        return results
         
-        # Wait for result (in production, this would be async)
-        result = await agent_framework.get_task_result(task_id, timeout=30)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Advanced analysis failed: {str(e)}")
+
+@app.post("/api/v2/analyze-project")
+async def analyze_project(request: ProjectAnalysisRequest, background_tasks: BackgroundTasks):
+    """Comprehensive project-wide analysis"""
+    try:
+        def run_project_analysis():
+            """Background task for project analysis"""
+            try:
+                # 1. Dependency Analysis
+                dep_analysis = dependency_analyzer.analyze_project(
+                    request.project_path,
+                    request.exclude_patterns
+                )
+                
+                # 2. Save results to database
+                if request.user_id:
+                    analysis_id = devmind_db.save_dependency_analysis(
+                        request.project_path,
+                        dep_analysis,
+                        request.user_id
+                    )
+                    print(f"✅ Project analysis saved with ID: {analysis_id}")
+                
+                return dep_analysis
+                
+            except Exception as e:
+                print(f"❌ Project analysis error: {e}")
+                return {"error": str(e)}
         
-        if result and result.get("status") == "success":
+        # Start background analysis
+        background_tasks.add_task(run_project_analysis)
+        
+        return {
+            "success": True,
+            "message": "Project analysis started",
+            "project_path": request.project_path,
+            "analysis_depth": request.analysis_depth,
+            "estimated_completion": "2-5 minutes"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Project analysis failed: {str(e)}")
+
+@app.get("/api/v2/project-analysis-status/{project_path:path}")
+async def get_project_analysis_status(project_path: str):
+    """Get status of project analysis"""
+    try:
+        analysis = devmind_db.get_latest_dependency_analysis(project_path)
+        
+        if analysis:
             return {
                 "success": True,
-                "analysis": result["result"],
-                "task_id": task_id
+                "status": "completed",
+                "analysis_date": analysis["analysis_date"],
+                "summary": analysis["analysis_data"].get("summary", {}),
+                "analysis_id": str(analysis["_id"])
             }
         else:
-            raise HTTPException(status_code=500, detail="Analysis failed")
-            
+            return {
+                "success": True,
+                "status": "not_found",
+                "message": "No analysis found for this project"
+            }
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/debug-code") 
-async def debug_code(request: DebugRequest):
-    """Debug code using AI agents"""
+@app.get("/api/v2/project-insights/{project_path:path}")
+async def get_project_insights(project_path: str):
+    """Get comprehensive project insights"""
     try:
-        task = AgentTask(
+        insights = devmind_db.get_project_insights(project_path)
+        
+        return {
+            "success": True,
+            "project_path": project_path,
+            "insights": insights
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== LEARNING AND PERSONALIZATION ENDPOINTS =====
+
+@app.post("/api/v2/learn-user-pattern")
+async def learn_user_pattern(request: LearningRequest):
+    """Learn from user patterns for personalization"""
+    try:
+        if request.learning_type == "code_style":
+            personalization_engine.learn_from_code_sample(
+                request.user_id,
+                request.data.get("code", ""),
+                request.data.get("file_path", ""),
+                request.data.get("language", "python")
+            )
+        
+        elif request.learning_type == "commit_pattern":
+            personalization_engine.learn_from_commits(
+                request.user_id,
+                request.data.get("commits", [])
+            )
+        
+        elif request.learning_type == "debug_session":
+            personalization_engine.learn_from_debug_session(
+                request.user_id,
+                request.data
+            )
+        
+        return {
+            "success": True,
+            "learning_type": request.learning_type,
+            "message": "Pattern learned successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Learning failed: {str(e)}")
+
+@app.post("/api/v2/get-personalized-recommendations")
+async def get_personalized_recommendations(request: PersonalizationRequest):
+    """Get personalized recommendations based on user profile"""
+    try:
+        recommendations = personalization_engine.get_personalized_recommendations(
+            request.user_id,
+            request.context
+        )
+        
+        return {
+            "success": True,
+            "user_id": request.user_id,
+            "recommendations": recommendations,
+            "personalized": len(recommendations.get("style_suggestions", [])) > 0
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Personalization failed: {str(e)}")
+
+@app.get("/api/v2/user-learning-progress/{user_id}")
+async def get_user_learning_progress(user_id: str):
+    """Get user's learning progress and analytics"""
+    try:
+        progress = devmind_db.get_learning_progress(user_id)
+        analytics = devmind_db.get_user_analytics(user_id)
+        
+        return {
+            "success": True,
+            "user_id": user_id,
+            "progress": progress,
+            "analytics": analytics
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== CODE SMELL MANAGEMENT ENDPOINTS =====
+
+@app.post("/api/v2/detect-code-smells")
+async def detect_code_smells(request: CodeSmellAnalysisRequest):
+    """Detect code smells with customizable rules"""
+    try:
+        smells = code_smell_detector.detect_smells(
+            request.code,
+            request.file_path,
+            request.language,
+            request.custom_rules
+        )
+        
+        # Save to database
+        if request.user_id:
+            devmind_db.save_code_smells(
+                request.file_path,
+                [smell.__dict__ for smell in smells],
+                request.user_id
+            )
+        
+        smell_summary = code_smell_detector.get_smell_summary(smells)
+        
+        return {
+            "success": True,
+            "file_path": request.file_path,
+            "language": request.language,
+            "smells": [
+                {
+                    "type": smell.smell_type,
+                    "severity": smell.severity,
+                    "description": smell.description,
+                    "line": smell.line_number,
+                    "suggestion": smell.suggestion,
+                    "rule_id": smell.rule_id,
+                    "category": smell.category,
+                    "confidence": smell.confidence
+                }
+                for smell in smells
+            ],
+            "summary": smell_summary,
+            "report": code_smell_detector.generate_report(smells, "json")
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Smell detection failed: {str(e)}")
+
+@app.get("/api/v2/code-smells")
+async def get_code_smells(
+    file_path: Optional[str] = Query(None),
+    severity: Optional[str] = Query(None),
+    resolved: Optional[bool] = Query(None)
+):
+    """Get code smells with filtering options"""
+    try:
+        smells = devmind_db.get_code_smells(file_path, severity)
+        
+        # Filter by resolved status if specified
+        if resolved is not None:
+            smells = [s for s in smells if s.get("resolved", False) == resolved]
+        
+        return {
+            "success": True,
+            "smells": smells,
+            "total": len(smells)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/v2/code-smells/{smell_id}/resolve")
+async def resolve_code_smell(smell_id: str):
+    """Mark a code smell as resolved"""
+    try:
+        success = devmind_db.mark_smell_resolved(smell_id)
+        
+        return {
+            "success": success,
+            "smell_id": smell_id,
+            "message": "Code smell marked as resolved" if success else "Failed to resolve"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== USER MANAGEMENT ENDPOINTS =====
+
+@app.post("/api/v2/users")
+async def create_user(user_data: Dict[str, Any]):
+    """Create a new user"""
+    try:
+        user_id = user_data.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
+        
+        success = devmind_db.create_user(user_id, user_data)
+        
+        return {
+            "success": success,
+            "user_id": user_id,
+            "message": "User created successfully" if success else "Failed to create user"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v2/users/{user_id}/interaction")
+async def record_user_interaction(
+    user_id: str,
+    event_type: str,
+    context: Dict[str, Any],
+    outcome: Dict[str, Any],
+    satisfaction_score: Optional[float] = None
+):
+    """Record user interaction for learning"""
+    try:
+        success = devmind_db.record_interaction(
+            user_id, event_type, context, outcome, satisfaction_score
+        )
+        
+        # Also record in personalization engine
+        personalization_engine.record_interaction(
+            user_id, event_type, context, outcome, satisfaction_score
+        )
+        
+        return {
+            "success": success,
+            "message": "Interaction recorded successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== EXISTING ENDPOINTS (Enhanced) =====
+
+@app.post("/api/debug-code")
+async def debug_code(request):
+    """Enhanced debug code with personalization"""
+    try:
+        # Get personalized debugging hints if user_id provided
+        personalized_hints = []
+        if hasattr(request, 'user_id') and request.user_id:
+            recommendations = personalization_engine.get_personalized_recommendations(
+                request.user_id,
+                {
+                    "error_message": request.error_message,
+                    "language": request.language,
+                    "code": request.code[:200]  # First 200 chars for context
+                }
+            )
+            personalized_hints = recommendations.get("debugging_hints", [])
+        
+        # Original debug logic
+        task = agent_framework.AgentTask(
             task_type="debug",
             input_data={
                 "code": request.code,
@@ -147,9 +514,12 @@ async def debug_code(request: DebugRequest):
         result = await agent_framework.get_task_result(task_id, timeout=30)
         
         if result and result.get("status") == "success":
+            debug_result = result["result"]
+            debug_result["personalized_hints"] = personalized_hints
+            
             return {
                 "success": True,
-                "debug_result": result["result"],
+                "debug_result": debug_result,
                 "task_id": task_id
             }
         else:
@@ -158,179 +528,66 @@ async def debug_code(request: DebugRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/review-code")
-async def review_code(request: ReviewRequest):
-    """Review code using AI agents"""
-    try:
-        task = AgentTask(
-            task_type="review",
-            input_data={
-                "code": request.code,
-                "language": request.language,
-                "file_path": request.file_path,
-                "review_type": request.review_type
-            }
-        )
-        
-        task_id = await agent_framework.submit_task(task)
-        result = await agent_framework.get_task_result(task_id, timeout=30)
-        
-        if result and result.get("status") == "success":
-            return {
-                "success": True,
-                "review": result["result"],
-                "task_id": task_id
-            }
-        else:
-            raise HTTPException(status_code=500, detail="Review failed")
-            
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# ===== UTILITY ENDPOINTS =====
 
-@app.post("/api/generate-commit")
-async def generate_commit(request: CommitRequest):
-    """Generate commit message using AI"""
-    try:
-        task = AgentTask(
-            task_type="generate",
-            input_data={
-                "generation_type": "commit_message",
-                "changes": request.changes,
-                "commit_style": request.commit_style
+@app.get("/api/v2/supported-languages")
+async def get_supported_languages():
+    """Get list of supported programming languages"""
+    return {
+        "success": True,
+        "languages": [
+            {
+                "name": "Python",
+                "code": "python",
+                "extensions": [".py"],
+                "features": ["ast_parsing", "code_smells", "complexity_analysis"]
+            },
+            {
+                "name": "JavaScript",
+                "code": "javascript", 
+                "extensions": [".js", ".jsx"],
+                "features": ["ast_parsing", "code_smells", "dependency_analysis"]
+            },
+            {
+                "name": "TypeScript",
+                "code": "typescript",
+                "extensions": [".ts", ".tsx"],
+                "features": ["ast_parsing", "code_smells", "dependency_analysis"]
+            },
+            {
+                "name": "Java",
+                "code": "java",
+                "extensions": [".java"],
+                "features": ["basic_parsing", "code_smells"]
             }
-        )
-        
-        task_id = await agent_framework.submit_task(task)
-        result = await agent_framework.get_task_result(task_id, timeout=30)
-        
-        if result and result.get("status") == "success":
-            return {
-                "success": True,
-                "commit_message": result["result"],
-                "task_id": task_id
-            }
-        else:
-            raise HTTPException(status_code=500, detail="Commit generation failed")
-            
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        ]
+    }
 
-@app.post("/api/query-codebase")
-async def query_codebase(request: QueryRequest):
-    """Query codebase using RAG system"""
+@app.get("/api/v2/analysis-history/{file_path:path}")
+async def get_analysis_history(file_path: str, limit: int = Query(10)):
+    """Get analysis history for a file"""
     try:
-        result = await rag_system.query_codebase(
-            query=request.query,
-            context_type=request.context_type,
-            max_results=request.max_results,
-            file_filter=request.file_filter
-        )
+        history = devmind_db.get_code_analysis_history(file_path, limit)
         
         return {
             "success": True,
-            "response": result["response"],
-            "relevant_chunks": result["relevant_chunks"],
-            "model_info": result["model_info"]
+            "file_path": file_path,
+            "history": history,
+            "total": len(history)
         }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/process-repository")
-async def process_repository(request: RepositoryRequest, background_tasks: BackgroundTasks):
-    """Process repository and store in vector database"""
+@app.delete("/api/v2/cleanup-data")
+async def cleanup_old_data(days_to_keep: int = Query(90)):
+    """Clean up old data to maintain performance"""
     try:
-        # Process repository in background
-        def process_repo():
-            chunks = code_processor.process_repository(
-                repo_path=request.repo_path,
-                exclude_patterns=request.exclude_patterns
-            )
-            
-            # Store in vector database
-            asyncio.create_task(vector_store.upsert_code_chunks(chunks))
-        
-        background_tasks.add_task(process_repo)
+        devmind_db.cleanup_old_data(days_to_keep)
         
         return {
             "success": True,
-            "message": "Repository processing started",
-            "repo_path": request.repo_path
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/agent-status")
-async def get_agent_status():
-    """Get status of all AI agents"""
-    try:
-        return {
-            "success": True,
-            "agents": agent_framework.get_agent_status(),
-            "framework_running": agent_framework.is_running
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/learn-interaction")
-async def learn_interaction(user_id: str, interaction_data: Dict[str, Any]):
-    """Learn from user interaction"""
-    try:
-        task = AgentTask(
-            task_type="learn",
-            input_data={
-                "user_id": user_id,
-                **interaction_data
-            }
-        )
-        
-        task_id = await agent_framework.submit_task(task)
-        result = await agent_framework.get_task_result(task_id, timeout=10)
-        
-        return {
-            "success": True,
-            "learning_result": result["result"] if result else None,
-            "task_id": task_id
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Test endpoints for development
-@app.post("/api/test-llm")
-async def test_llm(prompt: str, provider: Optional[str] = None):
-    """Test LLM connectivity"""
-    try:
-        response = await llm_client.generate_response(
-            prompt=prompt,
-            provider=provider,
-            max_tokens=500
-        )
-        
-        return {
-            "success": True,
-            "response": response.content,
-            "provider": response.provider,
-            "model": response.model,
-            "error": response.error
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/test-embeddings")
-async def test_embeddings(texts: List[str]):
-    """Test embedding generation"""
-    try:
-        embeddings = await embedding_service.generate_embeddings(texts)
-        
-        return {
-            "success": True,
-            "embeddings_count": len(embeddings),
-            "dimension": len(embeddings[0]) if embeddings else 0,
-            "sample_embedding": embeddings[0][:5] if embeddings else None
+            "message": f"Cleaned up data older than {days_to_keep} days"
         }
         
     except Exception as e:
