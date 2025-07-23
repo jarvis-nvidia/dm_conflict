@@ -19,7 +19,7 @@ class AIConfig:
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
     huggingface_api_key: str = os.getenv("HUGGINGFACE_API_KEY", "")
     pinecone_api_key: str = os.getenv("PINECONE_API_KEY", "")
-    pinecone_environment: str = os.getenv("PINECONE_ENVIRONMENT", "us-east-1-aws")
+    pinecone_environment: str = os.getenv("PINECONE_ENVIRONMENT", "us-east-1")
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     
     # Model Configuration
