@@ -175,8 +175,8 @@ class AdvancedASTParser:
                         complexity=self._calculate_js_complexity(node),
                         metadata={
                             'params': [p.name for p in node.params if hasattr(p, 'name')],
-                            'is_async': node.async if hasattr(node, 'async') else False,
-                            'is_generator': node.generator if hasattr(node, 'generator') else False,
+                            'is_async': getattr(node, 'async', False),
+                            'is_generator': getattr(node, 'generator', False),
                             'parent': parent_name
                         }
                     )
