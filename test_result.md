@@ -313,7 +313,8 @@ test_plan:
     - "Code Analysis Interface"
     - "Code Smell Visualization"
     - "Learning Dashboard"
-  stuck_tasks: []
+  stuck_tasks:
+    - "Advanced AST Parser"
   test_all: false
   test_priority: "high_first"
 
