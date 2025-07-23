@@ -10,8 +10,8 @@ import time
 import uuid
 from typing import Dict, Any, List
 
-# Backend URL - using localhost since external URL routes to frontend
-BACKEND_URL = "http://localhost:8001"
+# Backend URL - using the external URL from frontend .env
+BACKEND_URL = "https://9e1b2eda-fb7f-47df-b042-a0aaf5a14807.preview.emergentagent.com"
 
 # Test data with various code smells
 PYTHON_CODE_WITH_SMELLS = '''
