@@ -30,3 +30,6 @@ bandit
 safety
 autopep8
 black
+networkx
+matplotlib
+seaborn
