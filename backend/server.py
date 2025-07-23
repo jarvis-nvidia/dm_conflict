@@ -20,7 +20,7 @@ from ai_engine import (
     agent_framework
 )
 from ai_engine.code_processor import code_processor
-from ai_engine.agent_framework import AgentTask, AgentMessage
+from ai_engine.agent_framework import AgentTask, AgentMessage, agent_framework
 from ai_engine.advanced_ast_parser import advanced_ast_parser
 from ai_engine.code_smell_detector import code_smell_detector
 from ai_engine.dependency_analyzer import dependency_analyzer
