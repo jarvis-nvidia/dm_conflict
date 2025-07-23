@@ -45,24 +45,8 @@ const CodeSmellDashboard = () => {
     }
   };
 
-  const filteredSmells = smellResults?.smells?.filter(smell => {
-    const matchesSeverity = filterSeverity === 'all' || smell.severity === filterSeverity;
-    const matchesCategory = filterCategory === 'all' || smell.category === filterCategory;
-    const matchesSearch = searchTerm === '' || 
-      smell.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      smell.smell_type?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSeverity && matchesCategory && matchesSearch;
-  }) || [];
-
-  const smellSummary = smellResults?.summary || {};
-  const totalSmells = smellResults?.smells?.length || 0;
-
-  // Get unique categories and severities for filters
-  const categories = [...new Set(smellResults?.smells?.map(s => s.category).filter(Boolean) || [])];
-  const severities = [...new Set(smellResults?.smells?.map(s => s.severity).filter(Boolean) || [])];
-
-  const exampleCode = `def calculate_fibonacci(n):
+  const loadExampleCode = () => {
+    const exampleCode = `def calculate_fibonacci(n):
     if n <= 1:
         return n
     else:
@@ -94,220 +78,213 @@ API_KEY = "sk-1234567890abcdef"
 
 def unsafe_eval(user_input):
     return eval(user_input)  # Dangerous function`;
+    setCode(exampleCode);
+  };
+
+  const filteredSmells = smellResults?.smells?.filter(smell => {
+    const matchesSeverity = filterSeverity === 'all' || smell.severity === filterSeverity;
+    const matchesCategory = filterCategory === 'all' || smell.category === filterCategory;
+    const matchesSearch = searchTerm === '' || 
+      smell.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      smell.smell_type?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesSeverity && matchesCategory && matchesSearch;
+  }) || [];
+
+  const smellSummary = smellResults?.summary || {};
+  const totalSmells = smellResults?.smells?.length || 0;
+
+  // Get unique categories and severities for filters
+  const categories = [...new Set(smellResults?.smells?.map(s => s.category).filter(Boolean) || [])];
+  const severities = [...new Set(smellResults?.smells?.map(s => s.severity).filter(Boolean) || [])];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Code Smell Detection
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Detect and analyze code smells to improve your code quality and maintainability.
-        </p>
-      </div>
+    <div className="min-h-screen bg-[#111418] text-white">
+      <div className="px-40 flex flex-1 justify-center py-5">
+        <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
+          <div className="flex flex-wrap justify-between gap-3 p-4">
+            <p className="text-white tracking-light text-[32px] font-bold leading-tight min-w-72">Code Analysis</p>
+          </div>
 
-      {/* Input Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <div className="lg:col-span-2">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Code Input
-            </h2>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Language
-                  </label>
+          {/* Language Selection */}
+          <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
+            <label className="flex flex-col min-w-40 flex-1">
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border border-[#3b4754] bg-[#1b2127] focus:border-[#3b4754] h-14 placeholder:text-[#9cabba] p-[15px] text-base font-normal leading-normal"
+                style={{backgroundImage: "url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724px%27 height=%2724px%27 fill=%27rgb(156,171,186)%27 viewBox=%270 0 256 256%27%3e%3cpath d=%27M181.66,170.34a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-48-48a8,8,0,0,1,11.32-11.32L128,212.69l42.34-42.35A8,8,0,0,1,181.66,170.34Zm-96-84.68L128,43.31l42.34,42.35a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,85.66,85.66Z%27%3e%3c/path%3e%3c/svg%3e')", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 15px center'}}
+              >
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="java">Java</option>
+                <option value="typescript">TypeScript</option>
+              </select>
+            </label>
+          </div>
+
+          {/* File Path */}
+          <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
+            <label className="flex flex-col min-w-40 flex-1">
+              <input
+                type="text"
+                value={filePath}
+                onChange={(e) => setFilePath(e.target.value)}
+                placeholder="Optional file path"
+                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border border-[#3b4754] bg-[#1b2127] focus:border-[#3b4754] h-14 placeholder:text-[#9cabba] p-[15px] text-base font-normal leading-normal"
+              />
+            </label>
+          </div>
+
+          {/* Code Input */}
+          <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
+            <label className="flex flex-col min-w-40 flex-1">
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Enter your code here"
+                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border border-[#3b4754] bg-[#1b2127] focus:border-[#3b4754] min-h-36 placeholder:text-[#9cabba] p-[15px] text-base font-normal leading-normal"
+              />
+            </label>
+          </div>
+
+          {/* Load Example Button */}
+          <div className="flex px-4 py-3 justify-start">
+            <button
+              onClick={loadExampleCode}
+              className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#283039] text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#3b4754] transition-colors"
+            >
+              <span className="truncate">Load Example</span>
+            </button>
+          </div>
+
+          {/* Detect Button */}
+          <div className="flex px-4 py-3 justify-start">
+            <button
+              onClick={handleDetectSmells}
+              disabled={loading || !code.trim()}
+              className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-[#0c7ff2] text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? (
+                <LoadingSpinner size="sm" text="" />
+              ) : (
+                <span className="truncate">Detect Code Smells</span>
+              )}
+            </button>
+          </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="px-4 py-3">
+              <ErrorMessage error={error} />
+            </div>
+          )}
+
+          {/* Summary Section */}
+          {smellResults && (
+            <>
+              <h2 className="text-white text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Summary</h2>
+              <div className="flex flex-wrap gap-4 p-4">
+                <div className="flex min-w-[158px] flex-1 flex-col gap-2 rounded-lg p-6 bg-[#283039]">
+                  <p className="text-white text-base font-medium leading-normal">Total Issues</p>
+                  <p className="text-white tracking-light text-2xl font-bold leading-tight">{totalSmells}</p>
+                  <p className="text-[#0bda5b] text-base font-medium leading-normal">+10%</p>
+                </div>
+                <div className="flex min-w-[158px] flex-1 flex-col gap-2 rounded-lg p-6 bg-[#283039]">
+                  <p className="text-white text-base font-medium leading-normal">Quality Score</p>
+                  <p className="text-white tracking-light text-2xl font-bold leading-tight">{smellSummary.quality_score || 85}/100</p>
+                  <p className="text-[#fa6238] text-base font-medium leading-normal">-5%</p>
+                </div>
+                <div className="flex min-w-[158px] flex-1 flex-col gap-2 rounded-lg p-6 bg-[#283039]">
+                  <p className="text-white text-base font-medium leading-normal">Top Recommendations</p>
+                  <p className="text-white tracking-light text-2xl font-bold leading-tight">
+                    {smellSummary.recommendations?.slice(0, 3).join(', ') || '1. Refactor long methods 2. Reduce code duplication 3. Improve variable naming'}
+                  </p>
+                  <p className="text-[#0bda5b] text-base font-medium leading-normal">+20%</p>
+                </div>
+              </div>
+
+              {/* Results Visualization */}
+              <h2 className="text-white text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Results</h2>
+              <SmellVisualization smells={smellResults.smells} />
+
+              {/* Filters */}
+              <h3 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-4">Filter</h3>
+              <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
+                <label className="flex flex-col min-w-40 flex-1">
                   <select
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value={filterSeverity}
+                    onChange={(e) => setFilterSeverity(e.target.value)}
+                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border border-[#3b4754] bg-[#1b2127] focus:border-[#3b4754] h-14 placeholder:text-[#9cabba] p-[15px] text-base font-normal leading-normal"
+                    style={{backgroundImage: "url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724px%27 height=%2724px%27 fill=%27rgb(156,171,186)%27 viewBox=%270 0 256 256%27%3e%3cpath d=%27M181.66,170.34a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-48-48a8,8,0,0,1,11.32-11.32L128,212.69l42.34-42.35A8,8,0,0,1,181.66,170.34Zm-96-84.68L128,43.31l42.34,42.35a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,85.66,85.66Z%27%3e%3c/path%3e%3c/svg%3e')", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 15px center'}}
                   >
-                    <option value="python">Python</option>
-                    <option value="javascript">JavaScript</option>
-                    <option value="java">Java</option>
-                    <option value="typescript">TypeScript</option>
+                    <option value="all">All Severities</option>
+                    {severities.map(severity => (
+                      <option key={severity} value={severity}>{severity}</option>
+                    ))}
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    File Path
-                  </label>
-                  <input
-                    type="text"
-                    value={filePath}
-                    onChange={(e) => setFilePath(e.target.value)}
-                    placeholder="e.g., src/main.py"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                </label>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Code
-                  </label>
-                  <button
-                    onClick={() => setCode(exampleCode)}
-                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              <div className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
+                <label className="flex flex-col min-w-40 flex-1">
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border border-[#3b4754] bg-[#1b2127] focus:border-[#3b4754] h-14 placeholder:text-[#9cabba] p-[15px] text-base font-normal leading-normal"
+                    style={{backgroundImage: "url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724px%27 height=%2724px%27 fill=%27rgb(156,171,186)%27 viewBox=%270 0 256 256%27%3e%3cpath d=%27M181.66,170.34a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-48-48a8,8,0,0,1,11.32-11.32L128,212.69l42.34-42.35A8,8,0,0,1,181.66,170.34Zm-96-84.68L128,43.31l42.34,42.35a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,85.66,85.66Z%27%3e%3c/path%3e%3c/svg%3e')", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 15px center'}}
                   >
-                    Load Example
-                  </button>
-                </div>
-                <textarea
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="Paste your code here..."
-                  className="w-full h-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm resize-none"
-                />
+                    <option value="all">All Categories</option>
+                    {categories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
-              <button
-                onClick={handleDetectSmells}
-                disabled={loading || !code.trim()}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
-              >
-                {loading ? (
-                  <LoadingSpinner size="sm" text="" />
-                ) : (
-                  <>
-                    <Search className="w-4 h-4" />
-                    <span>Detect Code Smells</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Summary Card */}
-        <div className="space-y-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Detection Summary
-            </h3>
-            
-            {smellResults ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Total Issues</span>
-                  <span className="text-lg font-semibold text-gray-900 dark:text-white">{totalSmells}</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Quality Score</span>
-                  <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {smellSummary.quality_score || 'N/A'}/100
-                  </span>
-                </div>
-                
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <TrendingUp className="w-4 h-4 text-blue-500" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Recommendations
-                    </span>
+              {/* Search */}
+              <div className="px-4 py-3">
+                <label className="flex flex-col min-w-40 h-12 w-full">
+                  <div className="flex w-full flex-1 items-stretch rounded-lg h-full">
+                    <div className="text-[#9cabba] flex border-none bg-[#283039] items-center justify-center pl-4 rounded-l-lg border-r-0">
+                      <Search className="w-6 h-6" />
+                    </div>
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search code smells"
+                      className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border-none bg-[#283039] focus:border-none h-full placeholder:text-[#9cabba] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
+                    />
                   </div>
-                  <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                    {smellSummary.recommendations?.slice(0, 3).map((rec, idx) => (
-                      <li key={idx}>• {rec}</li>
-                    )) || <li>No recommendations available</li>}
-                  </ul>
-                </div>
+                </label>
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400">
-                  Run detection to see results
-                </p>
+
+              {/* Code Smells List */}
+              <h3 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-4">Code Smells</h3>
+              <div className="space-y-4 px-4">
+                {filteredSmells.length > 0 ? (
+                  filteredSmells.map((smell, index) => (
+                    <SmellCard key={index} smell={smell} />
+                  ))
+                ) : (
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-8 text-center">
+                    <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      No Issues Found
+                    </h3>
+                    <p className="text-[#9cabba]">
+                      {totalSmells === 0 
+                        ? "Great! Your code looks clean." 
+                        : "No issues match your current filters."}
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
-
-      {/* Error Display */}
-      {error && <ErrorMessage error={error} />}
-
-      {/* Results Section */}
-      {smellResults && (
-        <div className="space-y-6">
-          {/* Visualization */}
-          <SmellVisualization smells={smellResults.smells} />
-
-          {/* Filters */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="flex flex-wrap items-center gap-4 mb-4">
-              <div className="flex items-center space-x-2">
-                <Filter className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
-              </div>
-              
-              <select
-                value={filterSeverity}
-                onChange={(e) => setFilterSeverity(e.target.value)}
-                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm"
-              >
-                <option value="all">All Severities</option>
-                {severities.map(severity => (
-                  <option key={severity} value={severity}>{severity}</option>
-                ))}
-              </select>
-              
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm"
-              >
-                <option value="all">All Categories</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-              
-              <div className="flex-1 max-w-md">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search smells..."
-                  className="w-full px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Showing {filteredSmells.length} of {totalSmells} issues
-            </div>
-          </div>
-
-          {/* Smells List */}
-          <div className="space-y-4">
-            {filteredSmells.length > 0 ? (
-              filteredSmells.map((smell, index) => (
-                <SmellCard key={index} smell={smell} />
-              ))
-            ) : (
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-8 text-center">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  No Issues Found
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {totalSmells === 0 
-                    ? "Great! Your code looks clean." 
-                    : "No issues match your current filters."}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
