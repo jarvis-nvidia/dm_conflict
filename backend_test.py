@@ -151,7 +151,7 @@ class BackendTester:
     def __init__(self):
         self.base_url = BACKEND_URL
         self.test_results = []
-        self.user_id = f"test_user_{uuid.uuid4().hex[:8]}"
+        self.user_id = "demo_user"
         
     def log_test(self, test_name: str, success: bool, response_time: float, details: Dict[str, Any]):
         """Log test results"""
