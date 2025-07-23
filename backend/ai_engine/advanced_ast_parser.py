@@ -187,6 +187,19 @@ class AdvancedASTParser:
                 return str(node.returns)
         return None
     
+    def _extract_python_imports(self, tree: ast.AST) -> List[str]:
+        """Extract imports from Python AST"""
+        imports = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    imports.append(alias.name)
+            elif isinstance(node, ast.ImportFrom):
+                module = node.module or ''
+                for alias in node.names:
+                    imports.append(f"{module}.{alias.name}" if module else alias.name)
+        return imports
+    
     def _parse_javascript(self, content: str, file_path: str) -> Dict[str, Any]:
         """Parse JavaScript/TypeScript code"""
         try:
