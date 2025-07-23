@@ -39,11 +39,11 @@ class AIConfig:
     def __post_init__(self):
         self.llm_models = {
             "together": {
-                "model": "meta-llama/Llama-2-70b-chat-hf",
+                "model": "meta-llama/Llama-2-7b-chat-hf",  # Use smaller available model
                 "api_key": self.together_api_key
             },
             "groq": {
-                "model": "llama2-70b-4096", 
+                "model": "llama3-8b-8192",  # Use available model
                 "api_key": self.groq_api_key
             },
             "openai": {
