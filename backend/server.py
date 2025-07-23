@@ -16,8 +16,7 @@ from ai_engine import (
     llm_client, 
     vector_store, 
     embedding_service, 
-    rag_system, 
-    agent_framework
+    rag_system
 )
 from ai_engine.code_processor import code_processor
 from ai_engine.agent_framework import AgentTask, AgentMessage, agent_framework
